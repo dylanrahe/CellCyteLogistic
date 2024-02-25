@@ -1,0 +1,277 @@
+---
+title: "CellCyte Autodata"
+author: "Dylan P. Rahe"
+date: "2024-01-26"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readxl)
+```
+
+## Introduction
+
+This demonstrates the use of the CellCyteX autodata scripts for use in analyzing data output from the Cytena CellCyteX machine. After performing analysis in the Cytena software, download the raw data. It will be used as input to these functions.
+
+The basic function of these scripts is to 1) Gather input data, 2) Annotate according to user-supplied metadata, 3) Reformat for use in fitting and plotting, 4) Performing fits of the logistic function to estimate doubling time and carrying capacity, and 5) Generating plots for visualizing curves.
+
+This function requires ```tidyverse``` and ```readxl``` packages, if you need to install them run:
+
+```{r}
+install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+install.packages("readxl", repos = "http://cran.us.r-project.org")
+```
+
+
+## CellCyte_Input
+
+This function takes the raw data input from a CellCyteX analysis and formats it for logistic curve fitting. 
+
+First, A few functions are necessary to convert the spheroid area values into more useful measures, by converting corss-sectional area to volume, and then to mass by assuming cell density.
+
+
+```{r}
+#This is the density of a mammalian cell, in µg/mm^3. 
+
+Density<-1078
+
+#This converts cross-sectional area to volume
+
+AtoV<-function(x){
+  r<-sqrt(x/pi)
+  v<-(4/3)*pi*(r^3)
+  return(v)
+}
+
+#This estimates the mass, assuming the aggregate is a sphere, the area is at the equator, and the density is $Density
+
+MassEst<-function(x){Density*AtoV(x)}
+```
+
+Next, the metadata needs to be generated. The format requirements are (as of v0.1): one column called "Well" that contains the well identity in the format of "A1", "B1", etc. (the order does not matter); and one column called "Line" that is the condition, line, or sample to be grouped together. It's called "Line" and not anything more useful because that's what made sense with the original test data and I've been too lazy to change it. "Series B".
+
+Here I will use a ```tibble``` but a ```data.frame``` would work just as well.
+
+```{r}
+wells<-as.character()
+for(i in 1:12){
+    wells<-c(wells, paste0(LETTERS[1:8],i))
+  }
+metaData<-tibble(
+  Well=wells,
+  Media=c(
+    rep("CytivaIMDM", 8),
+    rep("FoodGradeIMDM", 88)
+  ),
+  Cys=c(
+    rep("Cystine", 8),
+    rep("NAC", 16),
+    rep("Cystine", 16),
+    rep("NAC", 16),
+    rep("Cystine", 16),
+    rep("NAC", 16),
+    rep("Cystine", 8)
+  ),
+  Tyr=rep(
+    c(
+      rep("Tyrosine", 8),
+      rep("NAT", 8)
+    ), 6
+  ),
+  Choline=c(
+    rep("CholineChloride", 8),
+    rep("aGPC", 32),
+    rep("CholineBitatrate", 32),
+    rep("None", 24)
+  )
+) %>%
+  mutate(Line=paste(Media, Cys, Tyr, Choline, sep="_"))
+
+print(metaData)
+```
+
+Now for the CellCyte_Input function. This is not super well implemented at present, and some known quirks need to be ironed out. But it works. 
+
+The default is csv input, but if you got an excel file from the cellcyte just use the option ```excel=T``` in the function. The data needs to be well data, don't use the grouped data output from the CellCyteX software.
+
+```{r}
+CellCyte_Input<-function(data, metadata, excel=F) {
+  ## should probably put some checks here. "excel=F" etc. isn't a good implementation, and the error messages are not useful.
+  readydata<-
+    if(excel==F){
+      suppressMessages(
+      read_csv(data, show_col_types = FALSE) %>%
+        select(-contains(c("Scan", "Stdev"))) %>%
+        rename(!!! setNames(names(.), c("Hour", gsub("Well ", "", .[1, -1])))) %>%
+        filter(!row_number() %in% c(1, 2)) %>%
+        mutate_if(is.character, as.numeric) %>%
+        mutate(across(!1, MassEst)) %>%
+        mutate(Hour=Hour/60)
+      )
+    } else if(excel==T){
+      readydata<-suppressMessages(
+        read_excel(data) %>%
+          select(-contains(c("Scan", "Stdev"))) %>%
+          rename(!!! setNames(names(.), c("Hour", gsub("Well ", "", .[1, -1])))) %>%
+          filter(!row_number() %in% c(1, 2)) %>%
+          mutate_if(is.character, as.numeric) %>%
+          mutate(across(!1, MassEst)) %>%
+          mutate(Hour=Hour/60) 
+      )
+    }
+  
+  if(dim(metadata)[1]!=(length(colnames(readydata))-1)){
+    stop("Mismatch between Data columns and Metadata rows: Check if all wells with data are present in metadata")
+  }
+  
+  plotdata<-readydata %>%
+    gather(Well, Mass.Est, -Hour) %>%
+    inner_join(metadata, by=join_by(Well)) %>%
+    group_by(Hour, Line) %>%
+    mutate(Outlier = abs(Mass.Est - median(Mass.Est, na.rm=T)) > 1.5 * IQR(Mass.Est, na.rm=T))
+  
+  mins<-plotdata %>% 
+    group_by(Well, Line) %>% 
+    filter(Mass.Est==min(Mass.Est))
+  
+  output<-list(data=readydata, metadata=metadata, plotdata=plotdata, mins=mins)
+  return(output)
+}
+
+```
+
+And now we can run using some data I generated. 
+
+*Note: You will need to change the location to wherever you have your data.*
+
+```{r}
+CCdata<-CellCyte_Input(data="/Users/dylanrahe/Fork & Good Dropbox/Dylan Rahe/R_Projects/3D_Cellcyte_AutoData/TestData_FoodGrade/696B8812_summary_wells_BF.xlsx", metadata = metaData, excel=T)
+
+print(CCdata)
+```
+
+
+## CellCyte_Optim
+
+This function uses the ```optim()``` function to estimate the logistic variables. It takes the output of ```CellCyte_Input()``` as an input, and outputs a version of that same input but with fits added. (This behavior is similar to the ```DESeq()``` function in ```DESeq2```).
+
+I'll write a specific description of how this works when it's actually working.
+
+```{r}
+CellCyte_Optim<-function(CC_Input, init=c(K=1200, N0=100, Td=36), Optim_method="Nelder-Mead"){
+  data<-CC_Input$data
+  metadata<-CC_Input$metadata
+  plotdata<-CC_Input$plotdata
+  mins<-CC_Input$mins
+  
+  #This needs to be made more universal, or specified in function
+  # Try to make it be specified like "Design" in DEseq2
+  
+  samples<-unique(metadata$Line)
+  
+  #Logistic function minimization (RSS):
+  
+  formula<-function(data, init){
+    with(data,
+         sum(
+           sqrt(
+             (
+               (init[1]/(1+((init[1]/init[2])-1)*exp(-((log(2)/init[3])*(Hour-T_off)))))-(Mass.Est-Bg)
+             )^2
+           )
+         )
+         
+    )
+  }
+  output<-data.frame()
+  for(i in samples){
+    Bg<-median(mins %>% filter(Line==i & !Outlier) %>% pull(Mass.Est))
+    T_off<-median(mins %>% filter(Line==i & !Outlier) %>% pull(Hour))
+    subset<-plotdata %>%
+      filter(!Outlier & Line==i & Hour>T_off)
+    #this was changed to estimate a carrying capacity to get a better fit, but the function call wasn't updated. need to update the function.
+    opt<-optim(par=c(max(CCdata$plotdata %>% filter(Line==samples[4] & Hour>24) %>% pull(Mass.Est), na.rm=T)-Bg, 0, 24),
+               fn=formula, 
+               data=subset, 
+               method=Optim_method)
+    output<-rbind(
+      output,
+      data.frame(
+        sample=i,
+        method=ifelse(Optim_method=="Nelder-Mead", "NM", Optim_method), 
+        K=unname(opt$par[1]), 
+        N0=unname(opt$par[2]), 
+        Td=unname(opt$par[3]),
+        Bg=Bg,
+        Time_offset=T_off,
+        RSS=unname(opt$value)
+      ) %>%
+        mutate(r=log(2)/Td)
+    )
+  } 
+  CC_Input$fits<-output
+  return(CC_Input)
+}
+
+```
+
+Now to run:
+
+```{r}
+CCdata<-CellCyte_Optim(CCdata)
+
+print(CCdata$fits)
+```
+
+I'm still working out some kinks. The algorithm likes to pick huge K values for some samples that don't grow, which limits its utility in comparisons to only those samples that exhibit logistic growth.
+
+Furthermore, the doubling time is quite sensitive to changes in the fit - also not clear if that will be a useful measure when comparing very different things. We'll have to see.
+
+## CC_plot
+
+Let's look at some examples using the CC_plot function.
+
+```{r}
+CC_plot<-function(CC_data, sample){
+  plotdata<-
+    CC_data$plotdata %>%
+    filter(Line==sample)
+  opt<-
+    CC_data$fits[CC_data$fit$sample==sample,]
+  ggplot() + 
+    geom_line(data=data.frame(Hour=seq(0,max(CC_data$data$Hour),1)) %>% 
+                mutate(Predict=(opt$K/(1+((opt$K/opt$N0)-1)*exp(-((log(2)/opt$Td)*(Hour-opt$Time_offset)))))+opt$Bg), 
+              aes(Hour, Predict), color="firebrick", size=2) +
+    geom_point(data=plotdata, aes(Hour, Mass.Est), color="grey70", alpha=0.6, pch=16) +
+    geom_point(data=plotdata %>% filter(!Outlier), aes(Hour, Mass.Est), color="grey50", alpha=0.6, pch=16) +
+    ylim(c(0,round(max(CC_data$plotdata %>% filter(Line==sample & Hour>24) %>% pull(Mass.Est), na.rm=T)*1.1))) +
+    scale_x_continuous(breaks=seq(0, max(CC_data$plotdata$Hour), by=24),
+                       limits=c(0, max(CC_data$plotdata$Hour))) +
+    #geom_vline(xintercept=opt$Time_offset, color="red") +
+    #geom_hline(yintercept=Bg) +
+    labs(title=paste("Sample:", sample, sep=" "), x="Hours", y="Estimated Mass, µg") +
+    theme_minimal() +
+    theme(plot.title = element_text(hjust=0.5, face="bold"))
+  
+}
+```
+
+```{r}
+samples<-unique(metaData$Line)
+CC_plot(CCdata, samples[1])
+```
+
+*Note that the lighter colored points have been identified as outliers and are not used to fit the curve*
+
+Let's try plotting one of the ones that didn't grow at all:
+
+```{r}
+CC_plot(CCdata, samples[2])
+```
+
+Still need to implement a function for comparing and performing statistics, but I haven't figured out what's the best way to do that. 
