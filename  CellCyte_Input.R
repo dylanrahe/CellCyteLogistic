@@ -35,7 +35,7 @@ CellCyte_Input<-function(data, metadata, excel=T) {
   
   mins<-plotdata %>% 
     group_by(Well, Line) %>% 
-    filter(Mass.Est==min(Mass.Est))
+    filter(Mass.Est==min(Mass.Est, na.rm=T))
   
   output<-list(data=readydata, metadata=metadata, plotdata=plotdata, mins=mins)
   return(output)
