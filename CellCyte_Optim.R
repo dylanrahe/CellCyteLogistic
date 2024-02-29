@@ -18,7 +18,7 @@ CellCyte_Optim<-function(CC_Input, init=c(K=1200, N0=100, Td=36, T_off=24, Bg=50
              (
                (init[1]/(1+((init[1]/init[2])-1)*exp(-((log(2)/init[3])*(Hour-init[4])))))-(Mass.Est-init[5])
              )^2
-           )
+           ), na.rm=T
          )
          
     )
