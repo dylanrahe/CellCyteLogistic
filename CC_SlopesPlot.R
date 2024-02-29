@@ -22,7 +22,7 @@ CC_SlopesPlot<-function(CC_Input, refGroup=NULL, title="Growth Rate of Automatic
     
   
   if(!is.null(refGroup)){
-    if(refGroup %in% metadata$Line) {
+    if(refGroup %in% CC_Input$metadata$Line) {
       plot <- plot + stat_compare_means(data=CC_Input$logislopes[!(CC_Input$logislopes$Sample %in% CC_Input$metadata$Line),], aes(Line, logislopes),method = "anova", label.y = max(CC_Input$logislopes$logislopes)*1.02) + # Add global p-value
                      stat_compare_means(data=CC_Input$logislopes[!(CC_Input$logislopes$Sample %in% CC_Input$metadata$Line),], aes(Line, logislopes),label="p.signif", method = "t.test",
                                         ref.group = refGroup, label.y = max(CC_Input$logislopes$logislopes)*1.06)
