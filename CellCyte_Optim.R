@@ -25,8 +25,8 @@ CellCyte_Optim<-function(CC_Input, init=c(K=1200, N0=100, Td=36, T_off=24, Bg=50
   }
   output_UseAll<-data.frame()
   for(i in samples){
-    Bg_est<-median(mins %>% filter(Line==i & !Outlier) %>% pull(Mass.Est))
-    T_est<-median(mins %>% filter(Line==i & !Outlier) %>% pull(Hour))
+    Bg_est<-median(mins %>% filter(Line==i & !Outlier) %>% pull(Mass.Est), na.rm=T)
+    T_est<-median(mins %>% filter(Line==i & !Outlier) %>% pull(Hour), na.rm=T)
     K_est<-max(plotdata %>% filter(Line==i & Hour>24) %>% pull(Mass.Est), na.rm=T)
     subset<-plotdata %>%
       filter(!Outlier & Line==i & Hour>T_est)
@@ -53,8 +53,8 @@ CellCyte_Optim<-function(CC_Input, init=c(K=1200, N0=100, Td=36, T_off=24, Bg=50
   
   output_each<-data.frame()
   for(i in CC_Input$metadata %>% pull(Well)){
-    Bg_est<-min(CC_Input$data %>% pull(i))
-    K_est<-max(CC_Input$data %>% filter(Hour >24) %>% pull(i))
+    Bg_est<-min(CC_Input$data %>% pull(i), na.rm=T)
+    K_est<-max(CC_Input$data %>% filter(Hour >24) %>% pull(i), na.rm=T)
     T_est<-CC_Input$mins %>% filter(Well == i) %>% pull(Hour)
     subset<-CC_Input$plotdata %>% filter(Hour > T_est & Well== i)
     
