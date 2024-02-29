@@ -1,14 +1,14 @@
-CC_SlopesPlot<-function(CC_Input, refGroup=NULL){
+CC_SlopesPlot<-function(CC_Input, refGroup=NULL, title="Growth Rate of Automatic Fits"){
   plot<-
   ggplot() +
-    geom_boxplot(data=CC_Input$logislopes[!(CC_Input$logislopes$Sample %in% metadata$Line),], aes(Line, logislopes, color=Line), size=1.5) +
-    geom_jitter(data=CC_Input$logislopes[!(CC_Input$logislopes$Sample %in% metadata$Line),], aes(Line, logislopes, color=Line), width=0.2, size=2) +
-    geom_point(data=CC_Input$logislopes[CC_Input$logislopes$Sample %in% metadata$Line,], aes(Sample,logislopes), size=3, color="grey40") +
+    geom_boxplot(data=CC_Input$logislopes[!(CC_Input$logislopes$Sample %in% CC_Input$metadata$Line),], aes(Line, logislopes, color=Line), size=1.5) +
+    geom_jitter(data=CC_Input$logislopes[!(CC_Input$logislopes$Sample %in% CC_Input$metadata$Line),], aes(Line, logislopes, color=Line), width=0.2, size=2) +
+    geom_point(data=CC_Input$logislopes[CC_Input$logislopes$Sample %in% CC_Input$metadata$Line,], aes(Sample,logislopes), size=3, color="grey40") +
     scale_color_manual(values=viridis(12)) +
     ylab("Growth Rate, µg/hr") +
     xlab("Sample") +
-    ggtitle("Growth Rate using Automatic Fits", 
-            subtitle = "Slope of tangent line at inflection point of logistic curves") +
+    ggtitle(title, 
+            subtitle = "Slope of tangent line at inflection point of fitted logistic curves") +
     theme_bw() +
     theme(axis.text.x = element_text(angle=90, hjust=1),
           legend.position = "none",
