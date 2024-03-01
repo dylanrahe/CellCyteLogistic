@@ -37,7 +37,7 @@ CellCyte_Optim<-function(CC_Input, init=c(K=1200, N0=100, Td=36, T_off=24, Bg=50
     output_UseAll<-rbind(
       output_UseAll,
       data.frame(
-        sample=i,
+        Sample=i,
         method=ifelse(Optim_method=="Nelder-Mead", "NM", Optim_method), 
         K=unname(opt$par[1]), 
         N0=unname(opt$par[2]), 
@@ -89,7 +89,7 @@ CellCyte_Optim<-function(CC_Input, init=c(K=1200, N0=100, Td=36, T_off=24, Bg=50
   }
   for(i in unique(CC_Input$metadata$Line)){
     opt<-CC_Input$fits_UseAll %>%
-      filter(sample==i)
+      filter(Sample==i)
     predict[paste0(i, "_all")]<-(opt$K/(1+((opt$K/opt$N0)-1)*exp(-((log(2)/opt$Td)*(predict$Hour-opt$Time_offset)))))+opt$Bg
   }
   predict<-predict %>% gather(Sample, Predict, -Hour) %>% left_join(CC_Input$metadata, c("Sample"="Well"))
@@ -99,7 +99,7 @@ CellCyte_Optim<-function(CC_Input, init=c(K=1200, N0=100, Td=36, T_off=24, Bg=50
   
   logislopes<-numeric()
   for(i in unique(metadata$Line)){
-    logislopes<-c(logislopes, LogiSlope(as.numeric(CC_Input$fits_UseAll %>% filter(sample == i) %>% select(c(K, Td, N0, Time_offset, Bg))))[1])
+    logislopes<-c(logislopes, LogiSlope(as.numeric(CC_Input$fits_UseAll %>% filter(Sample == i) %>% select(c(K, Td, N0, Time_offset, Bg))))[1])
   }
   for(i in metadata$Well){
     logislopes<-c(logislopes, LogiSlope(as.numeric(CC_Input$fits_each %>% filter(Well == i) %>% select(c(K, Td, N0, Time_offset, Bg))))[1])
