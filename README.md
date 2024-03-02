@@ -58,13 +58,17 @@ invisible(lapply(list.files("PATH_TO_GIT_CLONE", recursive = T, full.names = T, 
     <img src="http://github.com/dylanrahe/CellCyteLogistic/blob/main/test_slopes_plot.png?raw=true" width="740" height="615">
     
     _Figure 2: Sample CC_SlopesPlot() boxplot of slopes from each well (colored dots) and from fit using all wells in a Line/group (grey dot)._
-7. If a reference group exists, the ```refGroup`` option can be used to include statistics, and the ```title``` option can be used to change the title
+7. If a reference group exists, the ```refGroup`` option can be used to include statistics, and the ```title``` option can be used to change the title:
     ```
     CC_SlopesPlot(data, refGroup="RMIMDM_1x_FGmSFv4100x", title="RMIMDM AA Titration")
     ```
-    <img src="http://github.com/dylanrahe/CellCyteLogistic/blob/main/test_slopes_plot2.png?raw=true" width="740" height="615">
+8. Similarly, the carrying capacity, K, can be plotted using ```CC_Kplot()``` and the same syntax/options:
+    ```
+    CC_Kplot(data, refGroup="RMIMDM_1x_FGmSFv4100x", title="RMIMDM AA Titration, Carrying Capacity")
+    ```
+    <img src="http://github.com/dylanrahe/CellCyteLogistic/blob/main/test_k_plot.png?raw=true" width="740" height="615">
     
-    _Figure 3: Sample CC_SlopesPlot() boxplot of slopes as above, but with statistics and title._
+    _Figure 4: Sample CC_Kplot() boxplot of carrying capacity with statistics and title._
     
 
 
