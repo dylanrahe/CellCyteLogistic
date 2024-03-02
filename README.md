@@ -62,6 +62,9 @@ invisible(lapply(list.files("PATH_TO_GIT_CLONE", recursive = T, full.names = T, 
     ```
     CC_SlopesPlot(data, refGroup="RMIMDM_1x_FGmSFv4100x", title="RMIMDM AA Titration")
     ```
+    <img src="http://github.com/dylanrahe/CellCyteLogistic/blob/main/test_slopes_plot2.png?raw=true" width="740" height="615">
+    
+    _Figure 3: Sample CC_SlopesPlot() boxplot as above, but with statistics and title._
 8. Similarly, the carrying capacity, K, can be plotted using ```CC_Kplot()``` and the same syntax/options:
     ```
     CC_Kplot(data, refGroup="RMIMDM_1x_FGmSFv4100x", title="RMIMDM AA Titration, Carrying Capacity")
