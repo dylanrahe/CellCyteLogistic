@@ -50,6 +50,7 @@ CellCyte_Optim<-function(CC_Input, init=c(K=1200, N0=100, Td=36, T_off=24, Bg=50
     )
   } 
   CC_Input$fits_UseAll<-output_UseAll
+  CC_Input$fits_UseAll$Sample<-factor(CC_Input$fits_UseAll$Sample, levels=unique(metadata$Line))
   
   output_each<-data.frame()
   for(i in CC_Input$metadata %>% pull(Well)){
@@ -80,6 +81,7 @@ CellCyte_Optim<-function(CC_Input, init=c(K=1200, N0=100, Td=36, T_off=24, Bg=50
   
   output_each <- output_each %>% left_join(CC_Input$metadata, "Well")
   CC_Input$fits_each<-output_each
+  CC_Input$fits_each$Line<-factor(CC_Input$fits_each$Line, levels=unique(metadata$Line))
   
   predict<-data.frame(Hour=seq(-50,max(CC_Input$data$Hour)+50,1))
   for(i in output_each$Well){
@@ -107,6 +109,7 @@ CellCyte_Optim<-function(CC_Input, init=c(K=1200, N0=100, Td=36, T_off=24, Bg=50
   names(logislopes)<-c(unique(metadata$Line),metadata$Well)
   logislopes<-data.frame(Sample=names(logislopes), logislopes=logislopes, row.names=NULL) %>% left_join(metadata, c("Sample"="Well"))
   CC_Input$logislopes<-logislopes
+  CC_Input$logislopes$Line <- factor(CC_Input$logislopes$Line, levels=unique(metadata$Line))
   
   
   return(CC_Input)

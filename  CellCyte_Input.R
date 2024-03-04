@@ -31,7 +31,8 @@ CellCyte_Input<-function(data, metadata, excel=T) {
     gather(Well, Mass.Est, -Hour) %>%
     inner_join(metadata, by=join_by(Well)) %>%
     group_by(Hour, Line) %>%
-    mutate(Outlier = abs(Mass.Est - median(Mass.Est, na.rm=T)) > 1.5 * IQR(Mass.Est, na.rm=T))
+    mutate(Outlier = abs(Mass.Est - median(Mass.Est, na.rm=T)) > 1.5 * IQR(Mass.Est, na.rm=T)) %>%
+    mutate(Line= factor(Line, levels=unique(metadata$Line)))
   
   mins<-plotdata %>% 
     group_by(Well, Line) %>% 
