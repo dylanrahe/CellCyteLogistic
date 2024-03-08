@@ -44,9 +44,9 @@ CC_Kplot<-function(CC_Input, refGroup=NULL, title="Carrying Capacity", plot.outl
   
   if(!is.null(refGroup)){
     if(refGroup %in% CC_Input$metadata$Line) {
-      plot <- plot + stat_compare_means(data=CC_Input$fits_each, aes(Line, K),method = "anova", label.y = max(CC_Input$fits_each$K)*1.02) + # Add global p-value
+      plot <- plot + stat_compare_means(data=CC_Input$fits_each, aes(Line, K),method = "anova", label.y = max(fits_each$K)*1.02) + # Add global p-value
         stat_compare_means(data=CC_Input$fits_each, aes(Line, K),label="p.signif", method = "t.test",
-                           ref.group = refGroup, label.y = max(CC_Input$fits_each$K)*1.06)
+                           ref.group = refGroup, label.y = max(fits_each$K)*1.06)
     } else {
       stop("\"refGroup\" is not contained within metadata")
     }
