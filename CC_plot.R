@@ -1,9 +1,10 @@
-CC_plot<-function(CC_data, sample){
+CC_plot<-function(CC_data, sample, plot.exp=FALSE){
   plotdata<-
     CC_data$plotdata %>%
     filter(Line==sample)
   opt<-
     CC_data$fits_UseAll[CC_data$fits_UseAll$Sample==sample,]
+  plot<-
   ggplot() + 
     geom_line(data=data.frame(Hour=seq(0,max(CC_data$data$Hour),1)) %>% 
                 mutate(Predict=(opt$K/(1+((opt$K/opt$N0)-1)*exp(-((log(2)/opt$Td)*(Hour-opt$Time_offset)))))+opt$Bg), 
@@ -16,5 +17,11 @@ CC_plot<-function(CC_data, sample){
     labs(title=paste("Sample:", sample, sep=" "), x="Hours", y="Estimated Mass, µg") +
     theme_minimal() +
     theme(plot.title = element_text(hjust=0.5, face="bold"))
-  
+  if(plot.exp==TRUE) {
+    plot<-
+    plot + geom_line(data=data.frame(Hour=seq(0,max(CC_data$data$Hour),1)) %>% 
+                mutate(Predict=opt$N0*exp(((log(2)/opt$Td)*(Hour-opt$Time_offset)))+opt$Bg), 
+              aes(Hour, Predict), color="tomato3", linewidth=0.75)
+  }
+  plot
 }
