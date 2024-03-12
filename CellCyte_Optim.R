@@ -1,4 +1,4 @@
-CellCyte_Optim<-function(CC_Input, init=c(K=1200, N0=100, Td=36, T_off=24, Bg=50), BgEst_method="Median", Optim_method="Nelder-Mead"){
+CellCyte_Optim<-function(CC_Input, init=c(K=1200, N0=100, Td=36, T_off=24, Bg=50), BgEst_method="Median", Optim_method="Nelder-Mead", cspr.vol=200, cspr.cell=312){
   data<-CC_Input$data
   metadata<-CC_Input$metadata
   plotdata<-CC_Input$plotdata
@@ -46,7 +46,8 @@ CellCyte_Optim<-function(CC_Input, init=c(K=1200, N0=100, Td=36, T_off=24, Bg=50
         Time_offset=unname(opt$par[4]),
         RSS=unname(opt$value)
       ) %>%
-        mutate(r=log(2)/Td)
+        mutate(r=log(2)/Td) %>%
+        mutate(cspr=((2*r*cspr.vol)*1000)/(((K-N0)*log((K/N0)-1))*cspr.cell))
     )
   } 
   CC_Input$fits_UseAll<-output_UseAll
@@ -75,7 +76,8 @@ CellCyte_Optim<-function(CC_Input, init=c(K=1200, N0=100, Td=36, T_off=24, Bg=50
         Time_offset=unname(opt$par[4]),
         RSS=unname(opt$value)
       ) %>%
-        mutate(r=log(2)/Td)
+        mutate(r=log(2)/Td) %>%
+        mutate(cspr=((2*r*cspr.vol)*1000)/(((K-N0)*log((K/N0)-1))*cspr.cell))
     )
   }
   
@@ -110,6 +112,8 @@ CellCyte_Optim<-function(CC_Input, init=c(K=1200, N0=100, Td=36, T_off=24, Bg=50
   logislopes<-data.frame(Sample=names(logislopes), logislopes=logislopes, row.names=NULL) %>% left_join(metadata, c("Sample"="Well"))
   CC_Input$logislopes<-logislopes
   CC_Input$logislopes$Line <- factor(CC_Input$logislopes$Line, levels=unique(metadata$Line))
+  
+  
   
   
   return(CC_Input)
